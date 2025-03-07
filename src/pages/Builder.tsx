@@ -93,11 +93,22 @@ const Builder = () => {
   const [jobDescription, setJobDescription] = useState("");
   const [existingResume, setExistingResume] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [isFineTuningMode, setIsFineTuningMode] = useState(false);
 
   // Navigation functions
   const goToStep = (step: FormStep) => {
     setCurrentStep(step);
     window.scrollTo(0, 0);
+  };
+
+  // When existingResume is set, we enter fine-tuning mode
+  const onExistingResumeChange = (text: string) => {
+    setExistingResume(text);
+    if (text.trim()) {
+      setIsFineTuningMode(true);
+    } else {
+      setIsFineTuningMode(false);
+    }
   };
 
   const resetForm = () => {
@@ -139,6 +150,7 @@ const Builder = () => {
     setJobDescription("");
     setExistingResume("");
     setSelectedTemplate("");
+    setIsFineTuningMode(false);
     goToStep("profile");
   };
 
@@ -177,7 +189,7 @@ const Builder = () => {
             jobDescription={jobDescription}
             onJobDescriptionChange={setJobDescription}
             existingResume={existingResume}
-            onExistingResumeChange={setExistingResume}
+            onExistingResumeChange={onExistingResumeChange}
             onNext={() => goToStep("template")}
             onBack={() => goToStep("education")}
           />
@@ -216,7 +228,7 @@ const Builder = () => {
     { id: "profile", label: "Profile" },
     { id: "experience", label: "Experience" },
     { id: "education", label: "Education" },
-    { id: "jobDescription", label: "Job Description" },
+    { id: "jobDescription", label: isFineTuningMode ? "Fine-Tune" : "Job Description" },
     { id: "template", label: "Template" },
     { id: "preview", label: "Preview" },
   ];

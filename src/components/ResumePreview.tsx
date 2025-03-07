@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, RefreshCw, FileText } from "lucide-react";
+import { Download, Loader2, RefreshCw, FileText, WandSparkles } from "lucide-react";
 import AnimatedContainer from "./ui-utils/AnimatedContainer";
 import { ProfileData } from "./ProfileForm";
 import { Experience } from "./ExperienceForm";
@@ -10,6 +10,7 @@ import { Education } from "./EducationForm";
 import { Template } from "./TemplateGallery";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { extractKeywords } from "@/utils/resumeParser";
 
 interface ResumePreviewProps {
   profile: ProfileData;
@@ -40,34 +41,8 @@ const ResumePreview = ({
   const [generatedResumeUrl, setGeneratedResumeUrl] = useState<string | null>(null);
   const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
   const [isFinetuning, setIsFinetuning] = useState(Boolean(existingResume));
+  const [matchScore, setMatchScore] = useState<number | null>(null);
   
-  // Extract keywords from job description (simplified implementation)
-  const extractKeywords = (text: string): string[] => {
-    if (!text) return [];
-    
-    // A simple keyword extraction that looks for technical skills, job titles, etc.
-    const commonKeywords = [
-      "react", "javascript", "typescript", "node", "express", "html", "css",
-      "python", "java", "c#", ".net", "aws", "azure", "gcp", "cloud",
-      "developer", "engineer", "architect", "manager", "lead", "senior",
-      "agile", "scrum", "kanban", "devops", "ci/cd", "git", "github",
-      "database", "sql", "nosql", "mongodb", "postgresql", "mysql",
-      "frontend", "backend", "fullstack", "mobile", "web", "app",
-      "testing", "qa", "quality", "communication", "team", "leadership"
-    ];
-    
-    // Extract words from job description
-    const words = text.toLowerCase().match(/\b\w+\b/g) || [];
-    
-    // Find matching keywords
-    return Array.from(new Set(
-      words.filter(word => 
-        commonKeywords.includes(word) && 
-        word.length > 2
-      )
-    )).slice(0, 10); // Limit to top 10 matches
-  };
-
   // This is a placeholder function for when we integrate the actual generation
   const regenerateResume = () => {
     setIsGenerating(true);
@@ -80,6 +55,14 @@ const ResumePreview = ({
       // Extract keywords from job description
       const keywords = extractKeywords(jobDescription);
       setMatchedKeywords(keywords);
+      
+      // Calculate a match score (simplified for demo)
+      if (isFinetuning && existingResume) {
+        const resumeLower = existingResume.toLowerCase();
+        const matchCount = keywords.filter(kw => resumeLower.includes(kw)).length;
+        const matchPercent = Math.min(Math.round((matchCount / keywords.length) * 100), 95);
+        setMatchScore(matchPercent);
+      }
       
       // For demo purpose, use the template thumbnail as the resume preview
       const template = templates.find(t => t.id === selectedTemplate);
@@ -119,9 +102,16 @@ const ResumePreview = ({
         <CardContent className="pt-6">
           <div className="space-y-6">
             <div className="space-y-2">
-              <h3 className="text-xl font-medium tracking-tight">
-                {isFinetuning ? "Your Fine-Tuned Resume" : "Your Resume"}
-              </h3>
+              <div className="flex items-center">
+                {isFinetuning && (
+                  <div className="mr-2 bg-primary/10 rounded-full p-1">
+                    <WandSparkles className="h-5 w-5 text-primary" />
+                  </div>
+                )}
+                <h3 className="text-xl font-medium tracking-tight">
+                  {isFinetuning ? "Your Fine-Tuned Resume" : "Your Resume"}
+                </h3>
+              </div>
               <p className="text-sm text-muted-foreground">
                 {isFinetuning 
                   ? "Review your existing resume optimized for the job description."
@@ -199,11 +189,34 @@ const ResumePreview = ({
                 </div>
 
                 {isFinetuning && (
-                  <div className="space-y-2 border rounded-md p-3 bg-muted/20">
-                    <div className="flex items-center">
-                      <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <h4 className="text-md font-medium">Fine-Tuning Mode</h4>
+                  <div className="space-y-2 border rounded-md p-3 bg-muted/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <WandSparkles className="mr-2 h-4 w-4 text-primary" />
+                        <h4 className="text-md font-medium">Fine-Tuning Mode</h4>
+                      </div>
+                      
+                      {matchScore !== null && (
+                        <div className="flex items-center">
+                          <span className={`text-xs font-medium ${
+                            matchScore >= 80 ? 'text-green-500' : 
+                            matchScore >= 60 ? 'text-amber-500' : 'text-red-500'
+                          }`}>
+                            {matchScore}% match
+                          </span>
+                          <div className="ml-2 w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full ${
+                                matchScore >= 80 ? 'bg-green-500' : 
+                                matchScore >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                              }`}
+                              style={{ width: `${matchScore}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
+                    
                     <p className="text-xs text-muted-foreground">
                       Your existing resume has been optimized for this job description while maintaining its original essence.
                     </p>
@@ -233,9 +246,23 @@ const ResumePreview = ({
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Your resume has been optimized to highlight these relevant skills and keywords.
+                    {isFinetuning 
+                      ? "Your resume has been optimized to highlight these relevant skills and keywords."
+                      : "Your resume includes these skills and keywords from the job description."}
                   </p>
                 </div>
+
+                {isFinetuning && (
+                  <div className="space-y-2">
+                    <h4 className="text-lg font-medium">Highlighted Changes</h4>
+                    <div className="space-y-1 text-xs border rounded p-2 bg-muted/10">
+                      <p>• Enhanced technical skills section to emphasize relevant technologies</p>
+                      <p>• Rephrased work achievements to match job requirements</p>
+                      <p>• Adjusted terminology to match industry standards from the job post</p>
+                      <p>• Reordered sections to prioritize most relevant experience</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
