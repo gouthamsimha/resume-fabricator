@@ -7,6 +7,7 @@ interface AnimatedContainerProps {
   className?: string;
   animation?: "fade" | "slide-up" | "slide-right" | "scale";
   delay?: number;
+  onClick?: () => void; // Added onClick prop
 }
 
 const AnimatedContainer = ({
@@ -14,6 +15,7 @@ const AnimatedContainer = ({
   className,
   animation = "fade",
   delay = 0,
+  onClick, // Include onClick in props destructuring
 }: AnimatedContainerProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -49,6 +51,7 @@ const AnimatedContainer = ({
         "transition-all duration-300 ease-in-out",
         className
       )}
+      onClick={onClick} // Add onClick handler to the div
     >
       {children}
     </div>
