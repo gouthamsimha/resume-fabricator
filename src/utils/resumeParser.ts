@@ -1,4 +1,3 @@
-
 // Resume parsing utility for extracting and processing resume content
 export const extractTextFromResume = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -68,12 +67,49 @@ export const extractKeywords = (text: string): string[] => {
 
 // Simple function to fine-tune a resume based on a job description
 export const fineTuneResume = (resume: string, jobDescription: string): string => {
-  // In a real implementation, this would use an AI service or more sophisticated logic
-  // This is a simplified placeholder implementation
+  if (!resume || !jobDescription) return resume;
   
+  // Extract keywords from job description
   const keywords = extractKeywords(jobDescription);
   
-  // For demo purposes, we're just returning the original resume
-  // In a real implementation, this would transform the resume to highlight relevant experiences
-  return resume;
+  // In a real implementation, this would use an AI service or more sophisticated logic
+  // For this demo, we'll implement a simple keyword-based enhancement
+  
+  // Split resume into sections
+  const sections = resume.split(/\n\n+/);
+  
+  // Process each section to potentially enhance it with keywords
+  const enhancedSections = sections.map(section => {
+    // Skip enhancing contact info section
+    if (section.includes('@') && section.includes('.com')) {
+      return section;
+    }
+    
+    // For skills section, ensure all relevant keywords are included
+    if (section.toLowerCase().includes('skills') || 
+        section.toLowerCase().includes('expertise') || 
+        section.toLowerCase().includes('technical')) {
+      
+      // Find which keywords from job description are missing in this section
+      const sectionLower = section.toLowerCase();
+      const missingKeywords = keywords.filter(kw => !sectionLower.includes(kw));
+      
+      // If there are missing relevant keywords, add them
+      if (missingKeywords.length > 0) {
+        const keywordsToAdd = missingKeywords.slice(0, 3).join(', '); // Limit to 3 additions
+        if (section.includes(':')) {
+          // If section has a format like "Skills: x, y, z"
+          return section.replace(/:(.*)/s, `: $1, ${keywordsToAdd}`);
+        } else {
+          // Otherwise just append
+          return `${section}, ${keywordsToAdd}`;
+        }
+      }
+    }
+    
+    return section;
+  });
+  
+  // Join the sections back together
+  return enhancedSections.join('\n\n');
 };
