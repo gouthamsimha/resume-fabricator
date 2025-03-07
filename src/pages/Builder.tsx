@@ -91,6 +91,7 @@ const Builder = () => {
   ]);
 
   const [jobDescription, setJobDescription] = useState("");
+  const [existingResume, setExistingResume] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
 
   // Navigation functions
@@ -136,6 +137,7 @@ const Builder = () => {
       },
     ]);
     setJobDescription("");
+    setExistingResume("");
     setSelectedTemplate("");
     goToStep("profile");
   };
@@ -174,6 +176,8 @@ const Builder = () => {
           <JobDescriptionInput
             jobDescription={jobDescription}
             onJobDescriptionChange={setJobDescription}
+            existingResume={existingResume}
+            onExistingResumeChange={setExistingResume}
             onNext={() => goToStep("template")}
             onBack={() => goToStep("education")}
           />
@@ -195,6 +199,7 @@ const Builder = () => {
             experiences={experiences}
             education={education}
             jobDescription={jobDescription}
+            existingResume={existingResume}
             selectedTemplate={selectedTemplate}
             templates={TEMPLATES}
             onBack={() => goToStep("template")}

@@ -1,19 +1,22 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, RefreshCw } from "lucide-react";
+import { Download, Loader2, RefreshCw, FileText } from "lucide-react";
 import AnimatedContainer from "./ui-utils/AnimatedContainer";
 import { ProfileData } from "./ProfileForm";
 import { Experience } from "./ExperienceForm";
 import { Education } from "./EducationForm";
 import { Template } from "./TemplateGallery";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ResumePreviewProps {
   profile: ProfileData;
   experiences: Experience[];
   education: Education[];
   jobDescription: string;
+  existingResume: string;
   selectedTemplate: string;
   templates: Template[];
   onBack: () => void;
@@ -25,44 +28,90 @@ const ResumePreview = ({
   experiences,
   education,
   jobDescription,
+  existingResume,
   selectedTemplate,
   templates,
   onBack,
   onReset,
 }: ResumePreviewProps) => {
+  const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [generatedResumeUrl, setGeneratedResumeUrl] = useState<string | null>(null);
+  const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
+  const [isFinetuning, setIsFinetuning] = useState(Boolean(existingResume));
+  
+  // Extract keywords from job description (simplified implementation)
+  const extractKeywords = (text: string): string[] => {
+    if (!text) return [];
+    
+    // A simple keyword extraction that looks for technical skills, job titles, etc.
+    const commonKeywords = [
+      "react", "javascript", "typescript", "node", "express", "html", "css",
+      "python", "java", "c#", ".net", "aws", "azure", "gcp", "cloud",
+      "developer", "engineer", "architect", "manager", "lead", "senior",
+      "agile", "scrum", "kanban", "devops", "ci/cd", "git", "github",
+      "database", "sql", "nosql", "mongodb", "postgresql", "mysql",
+      "frontend", "backend", "fullstack", "mobile", "web", "app",
+      "testing", "qa", "quality", "communication", "team", "leadership"
+    ];
+    
+    // Extract words from job description
+    const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+    
+    // Find matching keywords
+    return Array.from(new Set(
+      words.filter(word => 
+        commonKeywords.includes(word) && 
+        word.length > 2
+      )
+    )).slice(0, 10); // Limit to top 10 matches
+  };
 
   // This is a placeholder function for when we integrate the actual generation
   const regenerateResume = () => {
     setIsGenerating(true);
     setGeneratedResumeUrl(null);
     
-    // Simulating API call for resume generation
+    // Simulate API call for resume generation
     setTimeout(() => {
       setIsGenerating(false);
-      // For demo purpose, we'll use the template thumbnail as the resume preview
+      
+      // Extract keywords from job description
+      const keywords = extractKeywords(jobDescription);
+      setMatchedKeywords(keywords);
+      
+      // For demo purpose, use the template thumbnail as the resume preview
       const template = templates.find(t => t.id === selectedTemplate);
       setGeneratedResumeUrl(template?.thumbnail || null);
+      
+      toast({
+        title: isFinetuning ? "Resume fine-tuned" : "Resume generated",
+        description: isFinetuning 
+          ? "Your resume has been optimized for the job description"
+          : "Your new resume has been created",
+      });
     }, 2000);
   };
 
   const downloadResume = () => {
     setIsDownloading(true);
     
-    // Simulating download delay
+    // Simulate download delay
     setTimeout(() => {
       setIsDownloading(false);
       // In a real implementation, this would trigger a download of the actual generated PDF
-      alert("Resume download would start now in a real implementation.");
+      toast({
+        title: "Download started",
+        description: "Your resume will be downloaded as a PDF file",
+      });
     }, 1000);
   };
   
   // Auto-generate on component mount
-  useState(() => {
+  useEffect(() => {
     regenerateResume();
-  });
+  }, []);
 
   return (
     <AnimatedContainer animation="scale" className="w-full max-w-4xl mx-auto">
@@ -70,9 +119,13 @@ const ResumePreview = ({
         <CardContent className="pt-6">
           <div className="space-y-6">
             <div className="space-y-2">
-              <h3 className="text-xl font-medium tracking-tight">Your Resume</h3>
+              <h3 className="text-xl font-medium tracking-tight">
+                {isFinetuning ? "Your Fine-Tuned Resume" : "Your Resume"}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Review your AI-generated tailored resume.
+                {isFinetuning 
+                  ? "Review your existing resume optimized for the job description."
+                  : "Review your AI-generated tailored resume."}
               </p>
             </div>
 
@@ -82,7 +135,9 @@ const ResumePreview = ({
                   {isGenerating ? (
                     <div className="flex flex-col items-center justify-center h-full min-h-[500px] bg-muted/30">
                       <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
-                      <p className="text-muted-foreground">Generating your resume...</p>
+                      <p className="text-muted-foreground">
+                        {isFinetuning ? "Fine-tuning your resume..." : "Generating your resume..."}
+                      </p>
                     </div>
                   ) : generatedResumeUrl ? (
                     <div className="h-full bg-white">
@@ -131,17 +186,29 @@ const ResumePreview = ({
                       {isGenerating ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Regenerating...
+                          {isFinetuning ? "Fine-tuning..." : "Regenerating..."}
                         </>
                       ) : (
                         <>
                           <RefreshCw className="mr-2 h-4 w-4" />
-                          Regenerate
+                          {isFinetuning ? "Re-optimize Resume" : "Regenerate Resume"}
                         </>
                       )}
                     </Button>
                   </div>
                 </div>
+
+                {isFinetuning && (
+                  <div className="space-y-2 border rounded-md p-3 bg-muted/20">
+                    <div className="flex items-center">
+                      <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <h4 className="text-md font-medium">Fine-Tuning Mode</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Your existing resume has been optimized for this job description while maintaining its original essence.
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <h4 className="text-lg font-medium">Template</h4>
@@ -151,9 +218,22 @@ const ResumePreview = ({
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="text-lg font-medium">Optimization</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Your resume has been optimized for the job description you provided, highlighting relevant skills and experiences.
+                  <h4 className="text-lg font-medium">Job Keywords</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {matchedKeywords.length > 0 ? (
+                      matchedKeywords.map((keyword, i) => (
+                        <Badge key={i} variant="outline" className="bg-primary/10">
+                          {keyword}
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No keywords extracted yet
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Your resume has been optimized to highlight these relevant skills and keywords.
                   </p>
                 </div>
               </div>
